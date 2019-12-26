@@ -1,9 +1,9 @@
 # EasyGSHpy
 
+    
+    from main_tool import j_all
 
-from main_tool import j_all
-
-j_all(lib_func_fol , commonfol , basefol , stationsDB , requiredStationsFile , slffile , reqvar , telmod ,  period_s , period_e , k , *args ):
+    j_all(lib_func_fol , commonfol , basefol , stationsDB , requiredStationsFile , slffile , reqvar , telmod ,  period_s , period_e , k , *args ):
     
     This tool serves to:
         extract required variables from a .slf file (tomawac or 2d modules) for required stations (coordinates)
