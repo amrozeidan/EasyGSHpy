@@ -4,9 +4,9 @@
 from main_tool import j_all
 
 j_all(lib_func_fol , commonfol , basefol , stationsDB , requiredStationsFile , slffile , reqvar , telmod ,  period_s , period_e , k , *args ):
-    '''
+    
     This tool serves to:
-        extract required variables from a .slf file (tomawac or 2d modules) for required stations (coordinates) 
+        extract required variables from a .slf file (tomawac or 2d modules) for required stations (coordinates)
         and then run a comparison between the extracted values (simulated values) and measured values for:
             water levels
             tides components (amplitude phase shift) after extracting them
@@ -79,4 +79,3 @@ j_all(lib_func_fol , commonfol , basefol , stationsDB , requiredStationsFile , s
                 -wave mean period comparison
                 -wave peak period comparison
     
-    '''
