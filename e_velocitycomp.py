@@ -35,12 +35,15 @@ period_e = '2015-01-12'
 offset = 0
 requiredStationsFile = '/Users/amrozeidan/Documents/hiwi/easygshpy/stationsDB_reqStations/required_stations.dat'
 
-def e_velocitycomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFile ):
+def e_velocitycomp( commonfol , basefol , period , offset ,  requiredStationsFile ):
     
     station_names_req = np.loadtxt(requiredStationsFile , delimiter='\t', dtype = str).tolist()
 
+#    dateparse = lambda x: pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
     df_simul = pd.read_csv(path.join(basefol, 'telemac_variables','variables_all_stations' ,'velocity_all_stations.dat' ) ,index_col =0 )
     df_simul.index = pd.to_datetime(df_simul.index)
+#                           header =0 , parse_dates = ['Unnamed: 0'],date_parser = dateparse, index_col =0 , squeeze=True)
+#    df_simul.set_index('Unnamed: 0', inplace = True)
     
     dateparse2 = lambda x: pd.datetime.strptime(x, '%d-%b-%Y %H:%M:%S')
     path2 = path.join(commonfol, 'measurements')
@@ -55,8 +58,10 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
     #expanding velocity components 
     df_simul = df_simul.add_suffix('_simul')
     df_simul.columns = df_simul.columns.str.split('_', expand=True)
-
-    #stations for comparison    
+#    idx_cp = df_simul.columns.str.split('_', expand=True)
+#    df_simul.columns = idx_cp
+    
+    
     station_names_for_comp=[]
     for station in station_names_req:
         if (station in df_meas.columns.levels[0]) and (station in df_simul.columns.levels[0]):
@@ -70,6 +75,7 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
     df_meas = df_meas[station_names_for_comp][ period_s : period_e ]
     df_simul = df_simul[station_names_for_comp][ period_s : period_e ]
     
+
     #making directory to save the comparisons
     if not os.path.exists(path.join(basefol , 'velocitycomp')):
         os.makedirs(os.path.join(basefol , 'velocitycomp'))
@@ -85,13 +91,14 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
         for i,j in df_meas[station].columns.to_list():
             df_simul_meas.loc[: , pd.IndexSlice[station , i , j]] = df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]]- df_meas.loc[: , pd.IndexSlice[station , i , j]]
     
-    #dataframe with no nan
-    #df_for_nonan = pd.concat([df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]] , df_meas.loc[: , pd.IndexSlice[station , i , j]] ], axis = 1)
+#    df_for_nonan = df_meas.loc[: , pd.IndexSlice[station , i , j]].join(df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]], how = 'inner')
+#    df_for_nonan = df_for_nonan.sort_index(axis = 1)
+    df_for_nonan = pd.concat([df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]] , df_meas.loc[: , pd.IndexSlice[station , i , j]] ], axis = 1)
     
-    #dates for plots
     date_plots = df_simul_meas.index.to_list()
-
-    #max and min for plots scale
+#    [max_meas_simul , max_diff] = [ np.fmax( np.nanmax(df_meas.max()) , np.nanmax(df_simul.max()) ), np.nanmax(df_simul_meas.max())]
+#    [min_meas_simul , min_diff] = [ np.fmin( np.nanmin(df_meas.min()) , np.nanmin(df_simul.min()) ), np.nanmin(df_simul_meas.min())]
+    
     [magn_max_meas_simul , magn_max_diff] = [ np.fmax( np.nanmax(df_meas.loc[: , pd.IndexSlice[: , : , 'magn']].max()) ,
                                                        np.nanmax(df_simul.loc[: , pd.IndexSlice[: , 'magn' , 'simul' ]].max()) ), 
                                                        np.nanmax(df_simul_meas.loc[: , pd.IndexSlice[: , : , 'magn']] .max())]
@@ -118,7 +125,6 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
                                                        np.nanmin(df_simul.loc[: , pd.IndexSlice[: , 'velu' , 'simul' ]].min()) ), 
                                                        np.nanmin(df_simul_meas.loc[: , pd.IndexSlice[: , : , 'velu']] .min())]
     
-    #dict for plots
     plot_dict = {'magn': 'Velocity Magnitude', 'dirc': 'Velocity Direction', 'velv': 'Velocity v' , 'velu': 'Velocity u'} 
     plot_dict_units = {'magn': '[m/s]', 'dirc': '[add units]', 'velv': '[m/s]' , 'velu': '[m/s]'} 
     
@@ -128,10 +134,36 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
     plot_dict_min_diff = {'magn': magn_min_diff, 'dirc': dirc_min_diff, 'velv': velv_min_diff , 'velu': velu_min_diff} 
     plot_dict_max_diff = {'magn': magn_max_diff, 'dirc': dirc_max_diff, 'velv': velv_max_diff , 'velu': velu_max_diff} 
     
+    
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    print('Extracting velocity components comparison plots ...')
+    
+    n=0
     #comparison plots
     for station in station_names_for_comp:
+        
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
         for i,j in df_meas[station].columns.to_list():
-                        
+            
+#            df_for_nonan = pd.concat([df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]] , df_meas.loc[: , pd.IndexSlice[station , i , j]] ], axis = 1)
+#            df_for_nonan = df_for_nonan.dropna()
+#            if not df_for_nonan.empty:    
+#                x = df_for_nonan.iloc[1]
+#                y = df_for_nonan.iloc[0]
+#                mse = mean_squared_error(x,y)
+#                rmse = mse**0.5 
+#                me = np.mean(y-x)
+#                mae = mean_absolute_error(x,y)
+#            else:
+#                mse = 0
+#                rmse = 0
+#                me = 0
+#                mae = 0
+            
             #simulated values
             y2 = df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]].values
             #measured values for specific depth
@@ -165,6 +197,7 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
 #                                                  figsize = (15 , 10))
                 
                 ax2.plot(date_plots , y3)
+                #if (np.isnan(plot_dict_min_diff[j])==False) and (np.isnan(plot_dict_max_diff[j])==False):
                 ax2.set_ylim(plot_dict_max_diff[j]-1 ,plot_dict_min_diff[j]+1)
                 ax2.legend(['Difference'])
                 ax2.set_title(plot_dict[j] + ' difference,station: ' + station + ', depth= ' + i)
@@ -177,3 +210,10 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
                 savingname = path.join(path_1 , plot_dict[j] + '_comp_diffr_station_'+station + '_' + i + '.png')
                 fig.savefig(savingname )
                 plt.close()  
+                
+        print(station+' ...velocity components comparison extracted ...')
+        print('-------------------------------------')
+        
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')

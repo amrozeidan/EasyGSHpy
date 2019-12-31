@@ -38,21 +38,24 @@ requiredStationsFile = '/Users/amrozeidan/Documents/hiwi/easygshpy/stationsDB_re
 #shrink the multi-indices into one level
 #df_img.columns = ['_'.join(col).strip() for col in df_img.columns.values]
 
-def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFile ):
+def f_wavecomp( commonfol , basefol , period , offset ,  requiredStationsFile ):
 
     station_names_req = np.loadtxt(requiredStationsFile , delimiter='\t', dtype = str).tolist()
 
+#    dateparse = lambda x: pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
     df_simul = pd.read_csv(path.join(basefol, 'telemac_variables','variables_all_stations' ,'wave_all_stations.dat' ) ,index_col =0 )
     df_simul.index = pd.to_datetime(df_simul.index)
+#                           header =0 , parse_dates = ['Unnamed: 0'],date_parser = dateparse, index_col =0 , squeeze=True)
+#    df_simul.set_index('Unnamed: 0', inplace = True)
     
     dateparse2 = lambda x: pd.datetime.strptime(x, '%d-%b-%Y %H:%M:%S')
     path2 = path.join(commonfol, 'measurements')
     for file in os.listdir(path2):
         if file.endswith('.wv.dat'):
-            df_meas = pd.read_csv( path.join(path2 , file) , 
-                           header =0 , parse_dates = ['Time'],date_parser = dateparse2, index_col =0 , squeeze=True)
+#            df_meas = pd.read_csv( path.join(path2 , file) , 
+#                           header =0 , parse_dates = ['Time'],date_parser = dateparse2, index_col =0 , squeeze=True)
             ####for testing fake data
-            #df_meas = pd.read_csv( path.join(path2 , file) , index_col = 0)
+            df_meas = pd.read_csv( path.join(path2 , file) , index_col = 0)
 
     #expanding wave components
     idx = df_meas.columns.str.split('_', expand=True)
@@ -60,7 +63,7 @@ def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFi
     idx = df_simul.columns.str.split('_', expand=True)
     df_simul.columns = idx
     
-    #stations for comparison
+    
     station_names_for_comp=[]
     for station in station_names_req:
         if (station in df_meas.columns.levels[0]) and (station in df_simul.columns.levels[0]):
@@ -141,8 +144,19 @@ def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFi
     #sort columns multiindices to avoid 'PerformanceWarning: indexing past lexsort depth may impact performance.'
     dfmeassimulforcomp = dfmeassimulforcomp.sort_index( axis = 1)
     
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    print('Extracting wave components comparison plots ...')
+    
+    n=0
     #comparison plots
     for station in station_names_for_comp:
+        
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
+        
         for i in ['swh' , 'mwd' , 'mwp' , 'pwp']:
             
             try:
@@ -154,7 +168,7 @@ def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFi
             
             if dfmeassimulforcomp.loc[: , pd.IndexSlice[station , i , 'meas']].isnull().all() == False:
 
-                #subplot1 meas vs simul, subplot2 diff; for each station (excluding nan)
+                #subplot1 meas vs simul, subplot2 diff; for each station (including nan)
                 fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=False , figsize=(30,20))
                     
 #                dfmeassimulforcomp.loc[: , pd.IndexSlice[station , i]].plot( y = ['meas' , 'simul'] , ax=ax1 , legend=True  , 
@@ -181,4 +195,10 @@ def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFi
                 savingname = path.join(path_1 , plot_dict[i] + '_comp_diffr_station_'+station + '.png')
                 fig.savefig(savingname )
                 plt.close()
+                
+        print(station+' ...wave components comparison extracted ...')
+        print('-------------------------------------')
                         
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
