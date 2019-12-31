@@ -94,14 +94,14 @@ def extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqvar 
     
     #in case initial date is not defined in slf file, for the last slf file tested, something was
     #wrong with times so date_array is calculated based on DT 
-    times = slf.getTimes()
-    DT = (times[2] - times[1])/ 3600 #timestep in hours
-    init_date = datetime.datetime(2015 , 1, 6 , 0 , 0)
-    nsteps = len(slf.getTimes())
-    date_array = []
-    for i in range(nsteps):
-        date_array_i = init_date + i*datetime.timedelta(hours = DT )
-        date_array.append(date_array_i) 
+#    times = slf.getTimes()
+#   DT = (times[2] - times[1])/ 3600 #timestep in hours
+#   init_date = datetime.datetime(2015 , 1, 6 , 0 , 0)
+#    nsteps = len(slf.getTimes())
+#    date_array = []
+#    for i in range(nsteps):
+#        date_array_i = init_date + i*datetime.timedelta(hours = DT )
+#        date_array.append(date_array_i) 
     
     #defining indices of stations based on coordinates 
     XYZ = np.transpose(np.vstack((x , y)))
