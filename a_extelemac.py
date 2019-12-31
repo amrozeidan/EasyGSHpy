@@ -32,6 +32,10 @@ commonfol = '/Users/amrozeidan/Documents/hiwi/easygshpy/com'
 basefol = '/Users/amrozeidan/Documents/hiwi/easygshpy/base'
 stationsDB = '/Users/amrozeidan/Documents/hiwi/easygshpy/stationsDB_reqStations/info_all_stations.dat'
 slffile = '/Users/amrozeidan/Downloads/EAZYgsh tools/t2d___res2519_NSea_rev04u_y2015surge_conf10.slf'
+
+#testing old file
+#slffile = '/Users/amrozeidan/Documents/hiwi/scripts/allcomp/t2d___res1207_NSea_rev03a.4_y2006_conf00.slf'
+
 #variables for 2d modules
 reqvar = ['U' , 'V' , 'S' , 'SLNT' , 'W' ,  'A' , 'G' , 'H']
 telmod = '2D'
@@ -41,7 +45,7 @@ telmod = '2D'
 #telmod = 'TOMAWAC'
 
 
-def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqvar , telmod):
+def extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqvar , telmod):
     
     startt = time.time()
  
@@ -52,6 +56,8 @@ def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqva
     
     
     #extracting data from all stations database
+    #filename_infodata = '/Users/amrozeidan/Desktop/py_testing/com1/info_all_stations.dat'
+    #filename_infodata = commonfol + os.sep + 'info_all_stations.dat'
     stations_data = np.loadtxt(stationsDB , delimiter=',',skiprows=1 , dtype = str)
     
     station_names = stations_data[:,0]
@@ -63,6 +69,7 @@ def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqva
     
     
     # read *.slf file
+    #slf = ppSELAFIN('/Users/amrozeidan/Documents/hiwi/scripts/allcomp/t2d___res1207_NSea_rev03a.4_y2006_conf00.slf')
     slf = ppSELAFIN(slffile)
     slf.readHeader()
     slf.readTimes()
@@ -87,14 +94,14 @@ def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqva
     
     #in case initial date is not defined in slf file, for the last slf file tested, something was
     #wrong with times so date_array is calculated based on DT 
-#    times = slf.getTimes()
-#    DT = (times[2] - times[1])/ 3600 #timestep in hours
-#    init_date = datetime.datetime(2015 , 1, 6 , 0 , 0)
-#    nsteps = len(slf.getTimes())
-#    date_array = []
-#    for i in range(nsteps):
-#        date_array_i = init_date + i*datetime.timedelta(hours = DT )
-#        date_array.append(date_array_i) 
+    times = slf.getTimes()
+    DT = (times[2] - times[1])/ 3600 #timestep in hours
+    init_date = datetime.datetime(2015 , 1, 6 , 0 , 0)
+    nsteps = len(slf.getTimes())
+    date_array = []
+    for i in range(nsteps):
+        date_array_i = init_date + i*datetime.timedelta(hours = DT )
+        date_array.append(date_array_i) 
     
     #defining indices of stations based on coordinates 
     XYZ = np.transpose(np.vstack((x , y)))
@@ -281,4 +288,5 @@ def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqva
         print('all stations ...merging done')
     endw = time.time()
     print('total time elapsed: {}'.format(datetime.timedelta(seconds = endw-startw)))
+    
     
