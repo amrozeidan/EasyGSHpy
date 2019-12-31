@@ -35,7 +35,7 @@ period_e = '2015-01-12'
 offset = 0
 requiredStationsFile = '/Users/amrozeidan/Documents/hiwi/easygshpy/stationsDB_reqStations/required_stations.dat'
 
-def d_salinitycomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFile ):
+def d_salinitycomp( commonfol , basefol , period , offset ,  requiredStationsFile ):
     
     station_names_req = np.loadtxt(requiredStationsFile , delimiter='\t', dtype = str).tolist()
 
@@ -88,8 +88,18 @@ def d_salinitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
     [max_meas_simul , max_diff] = [ np.fmax( np.nanmax(df_meas.max()) , np.nanmax(df_simul.max()) ), np.nanmax(df_simul_meas.max())]
     [min_meas_simul , min_diff] = [ np.fmin( np.nanmin(df_meas.min()) , np.nanmin(df_simul.min()) ), np.nanmin(df_simul_meas.min())]
     
+    
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    print('Extracting salinity comparison plots ...')
+    
+    n=0
     #comparison plots
     for station in station_names_for_comp:
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
         for i in df_meas[station].columns.to_list():
             depth_for_plot = i
             #simulated values
@@ -114,6 +124,8 @@ def d_salinitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
 #                                                  grid = True ,title = 'Salinity difference,station: ' + station + ', depth= ' + i,
 #                                                  figsize = (15 , 10))
                 ax2.plot(date_plots , y3)
+                
+                #if (np.isnan(min_diff)==False) and (np.isnan(max_diff)==False):
                 ax2.set_ylim(min_diff-1 , max_diff+1)
                 ax2.set_title('Salinity difference,station: ' + station + ', depth= ' + i)  
                 ax2.legend(['Difference'])
@@ -123,4 +135,32 @@ def d_salinitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
                 savingname = path.join(path_1 , 'salinity_comp_diffr_station_'+station + '_' + i + '.png')
                 fig.savefig(savingname )
                 plt.close() 
+                
+                print(station+' ...salinity comparison extracted ...')
+                print('-------------------------------------')
     
+
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    
+    
+#df_2 = pd.DataFrame(pd.DataFrame([[9,10],[1,2],[5,6]],columns=["X_u","Y_u"]))
+#df_2
+#df = pd.DataFrame(pd.DataFrame([[1,2,3,4],[5,6,7,8],[9,10,11,12]],columns=["X_a","Y_c","X_b","Y_a"]))
+#df
+#df_diff = df
+#idx = df.columns.str.split('_' , expand=True)
+#df.columns = idx
+#idx = df_2.columns.str.split('_' , expand=True)
+#df_2.columns = idx
+#df
+#df_2
+#df_diff = df.copy(deep=True)
+#st_com = list(set(df.columns.levels[0]) & set(df_2.columns.levels[0]))
+#
+#station = 'X'
+#i = 'a'
+#
+#df_diff.loc[: , pd.IndexSlice[station ,i]] = df_2.loc[: , pd.IndexSlice[station , 'u']] - df.loc[: , pd.IndexSlice[station ,i ]]
