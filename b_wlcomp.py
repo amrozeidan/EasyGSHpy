@@ -27,15 +27,15 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from matplotlib.offsetbox import AnchoredText
 
-commonfol = '/Users/amrozeidan/Documents/hiwi/easygshpy/com'
-basefol = '/Users/amrozeidan/Documents/hiwi/easygshpy/base'
+commonfol = '/Users/amrozeidan/Documents/hiwi/easygshpy/com2612'
+basefol = '/Users/amrozeidan/Documents/hiwi/easygshpy/base2612'
 period_s = '2015-01-06'  
 period_e = '2015-01-12'
 k = 147
 offset = 0
 requiredStationsFile = '/Users/amrozeidan/Documents/hiwi/easygshpy/stationsDB_reqStations/required_stations.dat'
 
-def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFile ):
+def b_wlcomp( commonfol , basefol , period , k , offset ,  requiredStationsFile ):
     
     station_names_req = np.loadtxt(requiredStationsFile , delimiter='\t', dtype = str).tolist()
 
@@ -125,13 +125,23 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
     totme = []
     station_no_nan = []
     
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    print('Extracting plots ...')
     #looping through required stations
+    n=0
     for station in station_names_for_comp:
         #excluding nan 
         dfstation = df.loc[idx[:] , idx[ station , ['meas' , 'simul']]] 
         dfstation = dfstation.dropna() #removing nan
         x =  dfstation[station].meas
         y =  dfstation[station].simul
+        
+        
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
         
         #getting RMSE , ME , MAE
         if x.empty==False and y.empty==False:
@@ -163,7 +173,10 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
             savingname = path.join(path_1 , 'Wl_comp_diffr_station_'+station + '.png')
             fig.savefig(savingname )
             plt.close()
-    
+            
+                        
+            print(station+' ...water level comaprison extracted')
+            print('-------------------------------------')
          
             #scatter plot of meas and simul data colored by density (excluding nan) 
             xy = np.vstack([ x, y ]) 
@@ -186,6 +199,9 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
             fig.savefig(savingname )
             plt.close()
             
+            print(station+' ...water level scatter plot extracted')
+            print('-------------------------------------')
+            
             #nrmse extracting and storing
             nrmse = rmse/(x.max()-x.min())        
             totnrmse.append(nrmse) 
@@ -197,6 +213,11 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
             
         else:
             print(station + ' has no measured values (all are nan). It will not be included in plots and errors calcs')
+            print('-------------------------------------')
+            
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
         
     #nrmse dataframe 
     d = pd.DataFrame(  totnrmse , index = station_no_nan , columns = ['NRMSE'] )
@@ -213,6 +234,9 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
     savingname = path.join(path_1 , 'NRMSE of WL on the required locations' + '.png')
     fig.savefig(savingname  , dpi = 'figure' , orientation = 'landscape')
     plt.close()
+    
+    print('NRMSE of WL on the required locations ... extracted')
+    print('-------------------------------------')
     
     #rmse,mae and me dataframe 
     d = pd.DataFrame(  totrmse , index = station_no_nan , columns = ['RMSE'] )
@@ -240,4 +264,7 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
     fig.savefig(savingname  , dpi = 'figure' , orientation = 'landscape')
     plt.close()
     
-    
+    print('RMSE,MAE and ME of WL on the required locations ... extracted')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
