@@ -40,6 +40,8 @@ def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqva
     
     
     #extracting data from all stations database
+    #filename_infodata = '/Users/amrozeidan/Desktop/py_testing/com1/info_all_stations.dat'
+    #filename_infodata = commonfol + os.sep + 'info_all_stations.dat'
     stations_data = np.loadtxt(stationsDB , delimiter=',',skiprows=1 , dtype = str)
     
     station_names = stations_data[:,0]
@@ -51,6 +53,7 @@ def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqva
     
     
     # read *.slf file
+    #slf = ppSELAFIN('/Users/amrozeidan/Documents/hiwi/scripts/allcomp/t2d___res1207_NSea_rev03a.4_y2006_conf00.slf')
     slf = ppSELAFIN(slffile)
     slf.readHeader()
     slf.readTimes()
@@ -75,14 +78,14 @@ def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqva
     
     #in case initial date is not defined in slf file, for the last slf file tested, something was
     #wrong with times so date_array is calculated based on DT 
-#    times = slf.getTimes()
-#    DT = (times[2] - times[1])/ 3600 #timestep in hours
-#    init_date = datetime.datetime(2015 , 1, 6 , 0 , 0)
-#    nsteps = len(slf.getTimes())
-#    date_array = []
-#    for i in range(nsteps):
-#        date_array_i = init_date + i*datetime.timedelta(hours = DT )
-#        date_array.append(date_array_i) 
+    times = slf.getTimes()
+    DT = (times[2] - times[1])/ 3600 #timestep in hours
+    init_date = datetime.datetime(2015 , 1, 6 , 0 , 0)
+    nsteps = len(slf.getTimes())
+    date_array = []
+    for i in range(nsteps):
+        date_array_i = init_date + i*datetime.timedelta(hours = DT )
+        date_array.append(date_array_i) 
     
     #defining indices of stations based on coordinates 
     XYZ = np.transpose(np.vstack((x , y)))
@@ -270,6 +273,8 @@ def a_extelmac(lib_func_fol , commonfol , basefol , stationsDB , slffile , reqva
     endw = time.time()
     print('total time elapsed: {}'.format(datetime.timedelta(seconds = endw-startw)))
     
+    
+    
 
 def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFile ):
     
@@ -361,13 +366,23 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
     totme = []
     station_no_nan = []
     
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    print('Extracting plots ...')
     #looping through required stations
+    n=0
     for station in station_names_for_comp:
         #excluding nan 
         dfstation = df.loc[idx[:] , idx[ station , ['meas' , 'simul']]] 
         dfstation = dfstation.dropna() #removing nan
         x =  dfstation[station].meas
         y =  dfstation[station].simul
+        
+        
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
         
         #getting RMSE , ME , MAE
         if x.empty==False and y.empty==False:
@@ -399,7 +414,10 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
             savingname = path.join(path_1 , 'Wl_comp_diffr_station_'+station + '.png')
             fig.savefig(savingname )
             plt.close()
-    
+            
+                        
+            print(station+' ...water level comaprison extracted')
+            print('-------------------------------------')
          
             #scatter plot of meas and simul data colored by density (excluding nan) 
             xy = np.vstack([ x, y ]) 
@@ -422,6 +440,9 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
             fig.savefig(savingname )
             plt.close()
             
+            print(station+' ...water level scatter plot extracted')
+            print('-------------------------------------')
+            
             #nrmse extracting and storing
             nrmse = rmse/(x.max()-x.min())        
             totnrmse.append(nrmse) 
@@ -433,6 +454,11 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
             
         else:
             print(station + ' has no measured values (all are nan). It will not be included in plots and errors calcs')
+            print('-------------------------------------')
+            
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
         
     #nrmse dataframe 
     d = pd.DataFrame(  totnrmse , index = station_no_nan , columns = ['NRMSE'] )
@@ -449,6 +475,9 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
     savingname = path.join(path_1 , 'NRMSE of WL on the required locations' + '.png')
     fig.savefig(savingname  , dpi = 'figure' , orientation = 'landscape')
     plt.close()
+    
+    print('NRMSE of WL on the required locations ... extracted')
+    print('-------------------------------------')
     
     #rmse,mae and me dataframe 
     d = pd.DataFrame(  totrmse , index = station_no_nan , columns = ['RMSE'] )
@@ -476,6 +505,72 @@ def b_wlcomp( commonfol , basefol , period_s , period_e , k , requiredStationsFi
     fig.savefig(savingname  , dpi = 'figure' , orientation = 'landscape')
     plt.close()
     
+    print('RMSE,MAE and ME of WL on the required locations ... extracted')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+
+
+    
+def findpeaks(series, DELTA):
+    """
+    Finds extrema in a pandas series data.
+
+    Parameters
+    ----------
+    series : `pandas.Series`
+        The data series from which we need to find extrema.
+
+    DELTA : `float`
+        The minimum difference between data values that defines a peak.
+
+    Returns
+    -------
+    minpeaks, maxpeaks : `list`
+        Lists consisting of pos, val pairs for both local minima points and
+        local maxima points.
+    """
+    # Set inital values
+    mn, mx = np.Inf, -np.Inf
+    minpeaks = []
+    maxpeaks = []
+    lookformax = True
+    start = True
+    # Iterate over items in series
+    for time_pos, value in series.iteritems():
+        if value > mx:
+            mx = value
+            mxpos = time_pos
+        if value < mn:
+            mn = value
+            mnpos = time_pos
+        if lookformax:
+            if value < mx-DELTA:
+                # a local maxima
+                maxpeaks.append((mxpos, mx))
+                mn = value
+                mnpos = time_pos
+                lookformax = False
+            elif start:
+                # a local minima at beginning
+                minpeaks.append((mnpos, mn))
+                mx = value
+                mxpos = time_pos
+                start = False
+        else:
+            if value > mn+DELTA:
+                # a local minima
+                minpeaks.append((mnpos, mn))
+                mx = value
+                mxpos = time_pos
+                lookformax = True
+    # check for extrema at end
+    if value > mn+DELTA:
+        maxpeaks.append((mxpos, mx))
+    elif value < mx-DELTA:
+        minpeaks.append((mnpos, mn))
+    return minpeaks, maxpeaks
+
 
 def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile , stationsDB ):
     #required stations
@@ -503,14 +598,38 @@ def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile 
     station_names_for_comp=[]
     for station in station_names_req:
         if (station in df_meas.columns) and (station in df_simul.columns) and (station in maindatabase.index):
-            print(station)
+            #print(station)
             station_names_for_comp.append(station)
-#        elif station not in df_meas.columns:
-#            print(station + ' does not have measured data')
-#        elif station not in df_simul.columns:
-#            print(station + ' does not have simulated data')
-#        elif station not in stations:
-#            print(station + ' does not have enough data in StationsDatabase')
+        #elif station not in df_meas.columns:
+            #print(station + ' does not have measured data')
+        #elif station not in df_simul.columns:
+            #print(station + ' does not have simulated data')
+        #elif station not in stations:
+            #print(station + ' does not have enough data in StationsDatabase')
+
+
+    #check for extracted coefficients (to avoid re-extracting coefficients)
+    #read stations names in the measured coefficients (if available)
+#    try:
+#        simul_coef_stations = pd.read_csv(path.join(basefol , 'coef_simulated' , 'simul_amplitude_all_stations.dat')).columns
+#        meas_coef_stations = pd.read_csv(path.join(commonfol , 'coef_measured' , 'meas_amplitude_all_stations.dat')).columns
+#    except :
+#        print('no previous coefficient are generated')
+#        simul_coef_stations = []
+#        meas_coef_stations = []
+#    
+#    stations_for_ext = []
+#    for station in station_names_for_comp:
+#        if (station not in simul_coef_stations) or (station not in meas_coef_stations):
+#            stations_for_ext.append(station)
+#        
+        
+#    df_meas_crop = df_meas[period_s : period_e ]
+#    df_simul_crop = df_simul[period_s : '2015-01-10' ]
+#    date_inter = df_simul_crop.index.intersection(df_meas_crop.index)
+    
+#    datenum_meas = list(map(datenumaz,df_meas_crop.index.tolist()))
+#    datenum_simul = list(map(datenumaz,df_simul_crop.index.tolist()))
     
     #slicing the required stations and adding _meas and _simul to suffixes
     # to avoid duplication (_x and _y) while joining 
@@ -529,15 +648,26 @@ def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile 
     #converting datetime to datenum
     def datenumaz(d):
         return 366 + d.toordinal() + (d - dt.fromordinal(d.toordinal())).total_seconds()/(24*60*60)
-            
-    #and changing the index to datenum
-    dfmeassimulforcomp.index = dfmeassimulforcomp.index.map(datenumaz)
     
-    datenum = dfmeassimulforcomp.index
+#    def dt2dn(dt):
+#       ord = dt.toordinal()
+#       mdn = dt + datetime.timedelta(days = 366)
+#       frac = (dt-datetime.datetime(dt.year,dt.month,dt.day,0,0,0)).seconds / (24.0 * 60.0 * 60.0)
+#       return mdn.toordinal() + frac
+        
+    
+    datesforpeaks = dfmeassimulforcomp.index 
+    #and changing the index to datenum
+    #dfmeassimulforcomp.index = dfmeassimulforcomp.index.map(datenumaz)
+    
+    #datenum = dfmeassimulforcomp.index
+    datenum = dfmeassimulforcomp.index.map(datenumaz)
 
     #required tides avreviations
     pTides = ['MM','MF','Q1','O1','K1','SO1','MU2','N2','NU2','M2','S2','2SM2','MO3','MN4','M4'
           ,'MS4','MK4','S4','M6','2MS6','S6','M8','M10','M12' ] 
+    #pTides = ['MM','MF','Q1','O1','K1','SO1','MU2','N2','NU2','M2','S2','2SM2','MO3','MN4','M4'
+    #          ,'MS4','MK4','S4','M6','2MS6','S6','M8','M10','M12' ]
    
     #making directories for coefficients
     if not os.path.exists(os.path.join(basefol , 'coef_simulated')):
@@ -548,44 +678,75 @@ def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile 
         os.makedirs(os.path.join(commonfol , 'coef_measured'))
     path_m = os.path.join(commonfol , 'coef_measured')
     
-    #preparing dataframes
     dfa = pd.DataFrame()
     dfg = pd.DataFrame()
     idx = pd.IndexSlice
-    df_recons_h_meas = pd.DataFrame(columns = station_names_for_comp , index = datenum)
-    df_recons_h_simul = pd.DataFrame(columns = station_names_for_comp , index = datenum)
+    df_recons_h_meas = pd.DataFrame(columns = station_names_for_comp , index = datesforpeaks)
+    df_recons_h_simul = pd.DataFrame(columns = station_names_for_comp , index = datesforpeaks)
     station_no_nan = []
     
-    #extracting coef using utide.solve
-    #utide.reconstruct to be revised, getting weird water levels
+    rmse_v_max_t = []
+    rmse_v_min_t = [] 
+    rmse_h_max_t = [] 
+    rmse_h_min_t = [] 
+    
+#    np_recons_h_meas = np.empty((len(datenum) , len(station_names_for_comp)) )
+#    np_recons_h_simul = np.empty((len(datenum) , len(station_names_for_comp)) )
+    
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('Extracting coefficients and reconstructed water levels ...')
+    #i=0
+    n=0
     for station in station_names_for_comp:
         
         latitude = maindatabase.Latitude[station]
         
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
+        
         if dfmeassimulforcomp.loc[:,idx[station ,['meas']]].isnull().all().bool() == False:
             #MonteCarlo , ols
             #method = 'ols' , conf_int = 'MC'
+            
+            #tempcoefmeas = dfmeassimulforcomp.loc[:,idx[station ,['meas']]].apply(lambda x : (utide.solve(datenum , x , lat = latitude  , constit = pTides)))
+            print('-------------------------------------')
+            print(station+' ...coefficient calcs ...measured values ...')
             coef_meas = utide.solve(np.array(datenum) , dfmeassimulforcomp.loc[:,idx[station ,['meas']]].values[:,0] , lat = latitude , constit = pTides)
             #couldn't find how to save a coef
             #so i decided to merge the get_peaks function into this script
+            #tempcoefsimul = dfmeassimulforcomp.loc[:,idx[station ,['simul']]].apply(lambda x : (utide.solve(datenum , x , lat = latitude ,  constit = pTides)))
+            print('-------------------------------------')
+            print(station+' ...coefficient calcs ...simulated values ...')
             coef_simul = utide.solve(np.array(datenum) , dfmeassimulforcomp.loc[:,idx[station ,['simul']]].values[:,0] , lat = latitude , constit = pTides)
             
             #reconstructing the coef for the peak comparison 
+            print('-------------------------------------')
+            print(station+' ...reconstructed water levels calcs ...measured values ...')
             recons_coef_meas = utide.reconstruct(np.array(datenum) , coef_meas)
             df_recons_h_meas[station] = recons_coef_meas['h']
-
+            #np_recons_h_meas[: , i] = recons_coef_meas['h']
+            print('-------------------------------------')
+            print(station+' ...reconstructed water levels calcs ...measured values ...')
             recons_coef_simul = utide.reconstruct(np.array(datenum) , coef_simul)
             df_recons_h_simul[station] = recons_coef_simul['h']
-
+            #np_recons_h_simul[: , i] = recons_coef_simul['h']
+            
+            #tempcoefmeas.to_csv(path.join(path_m , 'coef_'+station+'.dat'))
+            #tempcoefsimul.to_csv(path.join(path_s , 'coef_'+station+'.dat'))
+            
+            #measindex = list(tempcoefmeas[station , 'meas']['name'])
             measindex = coef_meas['name'].tolist()
-
+            #simulindex = list(tempcoefsimul[station , 'simul']['name'])
             simulindex = coef_simul['name'].tolist()
             
+            #tempdfameas = tempcoefmeas.loc[idx['A'] , :].apply(pd.Series).T
             tempdfameas = pd.Series(coef_meas['A']).to_frame()
             tempdfameas.index = measindex
             tempdfameas.columns = [station] 
             tempdfameas.columns = pd.MultiIndex.from_product([tempdfameas.columns, ['meas']])
-
+            #tempdfasimul = tempcoefsimul.loc[idx['A'] , :].apply(pd.Series).T
             tempdfasimul = pd.Series(coef_simul['A']).to_frame()
             tempdfasimul.index = simulindex 
             tempdfasimul.columns = [station] 
@@ -594,11 +755,12 @@ def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile 
             dfa = pd.concat([dfa , tempdfameas] , axis = 1, sort = True)
             dfa = pd.concat([dfa , tempdfasimul] , axis = 1, sort = True)
             
+            #tempdfgmeas = tempcoefmeas.loc[idx['g'] , :].apply(pd.Series).T
             tempdfgmeas = pd.Series(coef_meas['g']).to_frame()
             tempdfgmeas.index = measindex
             tempdfgmeas.columns = [station] 
             tempdfgmeas.columns = pd.MultiIndex.from_product([tempdfgmeas.columns, ['meas']])
-
+            #tempdfgsimul = tempcoefsimul.loc[idx['g'] , :].apply(pd.Series).T
             tempdfgsimul = pd.Series(coef_simul['g']).to_frame()
             tempdfgsimul.index = simulindex    
             tempdfgsimul.columns = [station] 
@@ -607,8 +769,148 @@ def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile 
             dfg = pd.concat([dfg , tempdfgmeas] , axis = 1, sort = True)
             dfg = pd.concat([dfg , tempdfgsimul] , axis = 1, sort = True)
             
+            #i+=1
             station_no_nan.append(station)
-    
+            
+            print('-------------------------------------')
+            print(station+' ...finding peaks calcs ...')
+
+            #finding peaks
+            #in the following part, 2 represents simulated values and 3 represents the measured ones
+            #simul before reconstruction 
+            #DELTA = 0.3 (7 hours)
+            minpeaks2, maxpeaks2 = findpeaks(dfmeassimulforcomp.loc[:,idx[station ,['simul']]].iloc[:, 0] , DELTA=0.3)
+            
+            fig, ax = plt.subplots()
+            ax.set_ylabel('water level')
+            ax.set_xlabel('Time')
+            ax.set_title('Peaks in TimeSeries, simul before reconstruction')
+            dfmeassimulforcomp.loc[:,idx[station ,['simul']]].iloc[:, 0] .plot()
+            ax.scatter(*zip(*minpeaks2), color='red', label='min')
+            ax.scatter(*zip(*maxpeaks2), color='green', label='max')
+            ax.legend()
+            ax.grid(True)
+            plt.show()
+            
+            #meas before reconstruction
+            minpeaks3, maxpeaks3 = findpeaks(dfmeassimulforcomp.loc[:,idx[station ,['meas']]].iloc[:, 0] , DELTA=0.3)
+            
+            fig, ax = plt.subplots()
+            ax.set_ylabel('water level')
+            ax.set_xlabel('Time')
+            ax.set_title('Peaks in TimeSeries, meas before reconstruction')
+            dfmeassimulforcomp.loc[:,idx[station ,['meas']]].iloc[:, 0].plot()
+            ax.scatter(*zip(*minpeaks3), color='red', label='min')
+            ax.scatter(*zip(*maxpeaks3), color='green', label='max')
+            ax.legend()
+            ax.grid(True)
+            plt.show()
+            
+            #meas after reconstruction
+            minpeaks3r, maxpeaks3r = findpeaks(df_recons_h_meas[station] , DELTA=0.3)
+
+            fig, ax = plt.subplots()
+            ax.set_ylabel('water level')
+            ax.set_xlabel('Time')
+            ax.set_title('Peaks in TimeSeries, meas after rcs')
+            df_recons_h_meas[station].plot()
+            ax.scatter(*zip(*minpeaks3r), color='red', label='min')
+            ax.scatter(*zip(*maxpeaks3r), color='green', label='max')
+            ax.legend()
+            ax.grid(True)
+            plt.show()
+            
+            #simul after reconstruction
+            minpeaks2r, maxpeaks2r = findpeaks(df_recons_h_simul[station] , DELTA=0.3)
+
+            fig, ax = plt.subplots()
+            ax.set_ylabel('water level')
+            ax.set_xlabel('Time')
+            ax.set_title('Peaks in TimeSeries, simul after rcs')
+            df_recons_h_simul[station].plot()
+            ax.scatter(*zip(*minpeaks2r), color='red', label='min')
+            ax.scatter(*zip(*maxpeaks2r), color='green', label='max')
+            ax.legend()
+            ax.grid(True)
+            plt.show()
+            
+            #extracting locations of max and min peaks, before and after reconstruction
+            maxlcs2 = []
+            for i in range(len(maxpeaks2)):
+                maxlcs2.append(maxpeaks2[i][0])
+            
+            minlcs2 = []
+            for i in range(len(minpeaks2)):
+                minlcs2.append(minpeaks2[i][0])
+            
+            maxlcs3 = []
+            for i in range(len(maxpeaks3)):
+                maxlcs3.append(maxpeaks3[i][0])
+            
+            minlcs3 = []
+            for i in range(len(minpeaks3)):
+                minlcs3.append(minpeaks3[i][0])
+            
+            
+            
+            maxlcs2r = []
+            for i in range(len(maxpeaks2r)):
+                maxlcs2r.append(maxpeaks2r[i][0])
+            
+            minlcs2r = []
+            for i in range(len(minpeaks2r)):
+                minlcs2r.append(minpeaks2r[i][0])
+            
+            maxlcs3r = []
+            for i in range(len(maxpeaks3r)):
+                maxlcs3r.append(maxpeaks3r[i][0])
+            
+            minlcs3r = []
+            for i in range(len(minpeaks3r)):
+                minlcs3r.append(minpeaks3r[i][0])
+              
+            #getting indices based in the reconstructed values    
+            Dmax2 = cdist(np.array(list(map(datenumaz,maxlcs2r))).reshape(-1,1) , np.array(list(map(datenumaz,maxlcs2))).reshape(-1,1))
+            Dmin2 = cdist(np.array(list(map(datenumaz,minlcs2r))).reshape(-1,1) , np.array(list(map(datenumaz,minlcs2))).reshape(-1,1))
+            
+            Dmax3 = cdist(np.array(list(map(datenumaz,maxlcs3r))).reshape(-1,1) , np.array(list(map(datenumaz,maxlcs3))).reshape(-1,1))
+            Dmin3 = cdist(np.array(list(map(datenumaz,minlcs3r))).reshape(-1,1) , np.array(list(map(datenumaz,minlcs3))).reshape(-1,1))
+            
+            (indxmax2r , indxmax2) = np.where(Dmax2 == np.min(Dmax2 , axis=0) )
+            (indxmax3r , indxmax3) = np.where(Dmax3 == np.min(Dmax3 , axis=0) )
+            
+            (indxmin2r , indxmin2) = np.where(Dmin2 == np.min(Dmin2 , axis=0) )
+            (indxmin3r , indxmin3) = np.where(Dmin3 == np.min(Dmin3 , axis=0) )
+            
+            
+            #dataframes for high and low water levels (max and min): index - location of peak - value of peak
+            df_max2 = pd.DataFrame(data = maxpeaks2 , columns = ['maxsimullcs' , 'maxsimulpeaks'] ,  index = indxmax2r)
+
+            df_min2 = pd.DataFrame(data = minpeaks2 , columns = ['minsimullcs' , 'minsimulpeaks'] ,  index = indxmin2r)
+            
+            df_max3 = pd.DataFrame(data = maxpeaks3 , columns = ['maxmeaslcs' , 'maxmeaspeaks'] ,  index = indxmax3r)
+            
+            df_min3 = pd.DataFrame(data = minpeaks3 , columns = ['minmeaslcs' , 'minmeaspeaks'] ,  index = indxmin3r)
+            
+            #joined dataframes
+            df_max = df_max2.join(df_max3 , how = 'inner')
+            df_min = df_min2.join(df_min3 , how = 'inner')
+            
+            
+            #rmse calc
+            rmse_v_max = 0.5**mean_squared_error(df_max['maxmeaspeaks'] , df_max['maxsimulpeaks'])
+            rmse_v_min = 0.5**mean_squared_error(df_min['minmeaspeaks'] , df_min['minsimulpeaks'])
+            
+            rmse_h_max = 0.5**mean_squared_error(list(map(datenumaz,df_max['maxmeaslcs'].tolist())) , list(map(datenumaz,df_max['maxsimullcs'].tolist())) )
+            rmse_h_min = 0.5**mean_squared_error(list(map(datenumaz,df_min['minmeaslcs'].tolist())) , list(map(datenumaz,df_min['minsimullcs'].tolist())) )
+
+            #rmse for stations
+            rmse_v_max_t.append(rmse_v_max)
+            rmse_v_min_t.append(rmse_v_min)
+            rmse_h_max_t.append(rmse_h_max)
+            rmse_h_min_t.append(rmse_h_min)
+            
+            
     #save amplitude and phase shift for all stations
     dfa.loc[:,idx[station_no_nan ,['meas']]].to_csv(path.join(path_m,'meas_amplitude_all_stations.dat'))
     dfa.loc[:,idx[station_no_nan ,['simul']]].to_csv(path.join(path_s,'simul_amplitude_all_stations.dat'))
@@ -640,9 +942,17 @@ def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile 
     dfaft = dfaf.T
     dfgft = dfgf.T
 
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('Partial tides comparison plots ...')
+    
+    n=0
     #looping through tides
     for tide in pTides:
         
+        n+=1
+        print('tide {} of {} ...'.format( n, len(pTides)) )
         #A
         #subplot1 meas vs simul, subplot2 diff; for each tide
         
@@ -668,6 +978,9 @@ def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile 
         savingname = path.join(path_1 , tide + '_amplitude_comp' + '.png')
         fig.savefig(savingname)
         plt.close()
+        
+        print(tide +' ...amplitude comaprison extracted')
+        print('-------------------------------------')
     
         #g
         #subplot1 meas vs simul, subplot2 diff; for each tide
@@ -694,6 +1007,73 @@ def c_excoef( commonfol , basefol , period_s , period_e  , requiredStationsFile 
         savingname = path.join(path_1 , tide + '_phaseshift_comp' + '.png')
         fig.savefig(savingname)
         plt.close()
+        
+        print(tide +' ...phase shift comaprison extracted')
+        print('-------------------------------------')
+
+
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    #plotting rmse of high and low tides
+    #high tides
+    #subplot1 vertical, subplot2 horizontal; amongst stations
+        
+    fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=False,figsize=(15,11))
+    
+    ax1.plot(station_no_nan ,  rmse_v_max_t  , 'x')
+    ax1.set_xticks(list(range(len(station_no_nan))))
+    ax1.set_xticklabels(labels = station_no_nan,rotation=45 , horizontalalignment='right')
+    ax1.set_ylabel('Vertical RMSE')
+    ax1.legend(['Vertical RMSE'])
+    ax1.set_title('RMSE - High tides peaks values')
+
+    plt.subplots_adjust(hspace=0.5)
+    
+    ax2.plot(station_no_nan ,  rmse_h_max_t  , 'x')
+    ax2.set_ylabel('Horizontal RMSE')
+    ax2.set_xlabel('Stations')
+    ax2.legend(['Horizontal RMSE'])
+    ax2.set_title('RMSE - High tides peaks locations')
+    ax2.set_xticks(list(range(len(station_no_nan))))
+    ax2.set_xticklabels(labels = station_no_nan,rotation=45 , horizontalalignment='right')
+        
+    savingname = path.join(path_1 , 'high_tides_rmse' + '.png')
+    fig.savefig(savingname)
+    plt.close()
+    print('RMSE for high tides ... extracted ...')
+
+    #low tides
+    #subplot1 vertical, subplot2 horizontal; amongst stations
+        
+    fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=False,figsize=(15,11))
+    
+    ax1.plot(station_no_nan ,  rmse_v_min_t  , 'x')
+    ax1.set_xticks(list(range(len(station_no_nan))))
+    ax1.set_xticklabels(labels = station_no_nan,rotation=45 , horizontalalignment='right')
+    ax1.set_ylabel('Vertical RMSE')
+    ax1.legend(['Vertical RMSE'])
+    ax1.set_title('RMSE - Low tides peaks values')
+
+    plt.subplots_adjust(hspace=0.5)
+    
+    ax2.plot(station_no_nan ,  rmse_h_min_t  , 'x')
+    ax2.set_ylabel('Horizontal RMSE')
+    ax2.set_xlabel('Stations')
+    ax2.legend(['Horizontal RMSE'])
+    ax2.set_title('RMSE - Low tides peaks locations')
+    ax2.set_xticks(list(range(len(station_no_nan))))
+    ax2.set_xticklabels(labels = station_no_nan,rotation=45 , horizontalalignment='right')
+        
+    savingname = path.join(path_1 , 'low_tides_rmse' + '.png')
+    fig.savefig(savingname)
+    plt.close()
+    print('RMSE for low tides ... extracted ...')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+
         
 
 def d_salinitycomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFile ):
@@ -749,8 +1129,18 @@ def d_salinitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
     [max_meas_simul , max_diff] = [ np.fmax( np.nanmax(df_meas.max()) , np.nanmax(df_simul.max()) ), np.nanmax(df_simul_meas.max())]
     [min_meas_simul , min_diff] = [ np.fmin( np.nanmin(df_meas.min()) , np.nanmin(df_simul.min()) ), np.nanmin(df_simul_meas.min())]
     
+    
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    print('Extracting salinity comparison plots ...')
+    
+    n=0
     #comparison plots
     for station in station_names_for_comp:
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
         for i in df_meas[station].columns.to_list():
             depth_for_plot = i
             #simulated values
@@ -775,6 +1165,8 @@ def d_salinitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
 #                                                  grid = True ,title = 'Salinity difference,station: ' + station + ', depth= ' + i,
 #                                                  figsize = (15 , 10))
                 ax2.plot(date_plots , y3)
+                
+                #if (np.isnan(min_diff)==False) and (np.isnan(max_diff)==False):
                 ax2.set_ylim(min_diff-1 , max_diff+1)
                 ax2.set_title('Salinity difference,station: ' + station + ', depth= ' + i)  
                 ax2.legend(['Difference'])
@@ -784,14 +1176,25 @@ def d_salinitycomp( commonfol , basefol , period_s , period_e  ,  requiredStatio
                 savingname = path.join(path_1 , 'salinity_comp_diffr_station_'+station + '_' + i + '.png')
                 fig.savefig(savingname )
                 plt.close() 
+                
+                print(station+' ...salinity comparison extracted ...')
+                print('-------------------------------------')
+    
+
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
     
 
 def e_velocitycomp( commonfol , basefol , period_s , period_e  , requiredStationsFile ):
     
     station_names_req = np.loadtxt(requiredStationsFile , delimiter='\t', dtype = str).tolist()
 
+#    dateparse = lambda x: pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
     df_simul = pd.read_csv(path.join(basefol, 'telemac_variables','variables_all_stations' ,'velocity_all_stations.dat' ) ,index_col =0 )
     df_simul.index = pd.to_datetime(df_simul.index)
+#                           header =0 , parse_dates = ['Unnamed: 0'],date_parser = dateparse, index_col =0 , squeeze=True)
+#    df_simul.set_index('Unnamed: 0', inplace = True)
     
     dateparse2 = lambda x: pd.datetime.strptime(x, '%d-%b-%Y %H:%M:%S')
     path2 = path.join(commonfol, 'measurements')
@@ -806,8 +1209,10 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  , requiredStation
     #expanding velocity components 
     df_simul = df_simul.add_suffix('_simul')
     df_simul.columns = df_simul.columns.str.split('_', expand=True)
-
-    #stations for comparison    
+#    idx_cp = df_simul.columns.str.split('_', expand=True)
+#    df_simul.columns = idx_cp
+    
+    
     station_names_for_comp=[]
     for station in station_names_req:
         if (station in df_meas.columns.levels[0]) and (station in df_simul.columns.levels[0]):
@@ -821,6 +1226,7 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  , requiredStation
     df_meas = df_meas[station_names_for_comp][ period_s : period_e ]
     df_simul = df_simul[station_names_for_comp][ period_s : period_e ]
     
+
     #making directory to save the comparisons
     if not os.path.exists(path.join(basefol , 'velocitycomp')):
         os.makedirs(os.path.join(basefol , 'velocitycomp'))
@@ -836,13 +1242,14 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  , requiredStation
         for i,j in df_meas[station].columns.to_list():
             df_simul_meas.loc[: , pd.IndexSlice[station , i , j]] = df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]]- df_meas.loc[: , pd.IndexSlice[station , i , j]]
     
-    #dataframe with no nan
-    #df_for_nonan = pd.concat([df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]] , df_meas.loc[: , pd.IndexSlice[station , i , j]] ], axis = 1)
+#    df_for_nonan = df_meas.loc[: , pd.IndexSlice[station , i , j]].join(df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]], how = 'inner')
+#    df_for_nonan = df_for_nonan.sort_index(axis = 1)
+    df_for_nonan = pd.concat([df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]] , df_meas.loc[: , pd.IndexSlice[station , i , j]] ], axis = 1)
     
-    #dates for plots
     date_plots = df_simul_meas.index.to_list()
-
-    #max and min for plots scale
+#    [max_meas_simul , max_diff] = [ np.fmax( np.nanmax(df_meas.max()) , np.nanmax(df_simul.max()) ), np.nanmax(df_simul_meas.max())]
+#    [min_meas_simul , min_diff] = [ np.fmin( np.nanmin(df_meas.min()) , np.nanmin(df_simul.min()) ), np.nanmin(df_simul_meas.min())]
+    
     [magn_max_meas_simul , magn_max_diff] = [ np.fmax( np.nanmax(df_meas.loc[: , pd.IndexSlice[: , : , 'magn']].max()) ,
                                                        np.nanmax(df_simul.loc[: , pd.IndexSlice[: , 'magn' , 'simul' ]].max()) ), 
                                                        np.nanmax(df_simul_meas.loc[: , pd.IndexSlice[: , : , 'magn']] .max())]
@@ -869,7 +1276,6 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  , requiredStation
                                                        np.nanmin(df_simul.loc[: , pd.IndexSlice[: , 'velu' , 'simul' ]].min()) ), 
                                                        np.nanmin(df_simul_meas.loc[: , pd.IndexSlice[: , : , 'velu']] .min())]
     
-    #dict for plots
     plot_dict = {'magn': 'Velocity Magnitude', 'dirc': 'Velocity Direction', 'velv': 'Velocity v' , 'velu': 'Velocity u'} 
     plot_dict_units = {'magn': '[m/s]', 'dirc': '[add units]', 'velv': '[m/s]' , 'velu': '[m/s]'} 
     
@@ -879,10 +1285,36 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  , requiredStation
     plot_dict_min_diff = {'magn': magn_min_diff, 'dirc': dirc_min_diff, 'velv': velv_min_diff , 'velu': velu_min_diff} 
     plot_dict_max_diff = {'magn': magn_max_diff, 'dirc': dirc_max_diff, 'velv': velv_max_diff , 'velu': velu_max_diff} 
     
+    
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    print('Extracting velocity components comparison plots ...')
+    
+    n=0
     #comparison plots
     for station in station_names_for_comp:
+        
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
         for i,j in df_meas[station].columns.to_list():
-                        
+            
+#            df_for_nonan = pd.concat([df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]] , df_meas.loc[: , pd.IndexSlice[station , i , j]] ], axis = 1)
+#            df_for_nonan = df_for_nonan.dropna()
+#            if not df_for_nonan.empty:    
+#                x = df_for_nonan.iloc[1]
+#                y = df_for_nonan.iloc[0]
+#                mse = mean_squared_error(x,y)
+#                rmse = mse**0.5 
+#                me = np.mean(y-x)
+#                mae = mean_absolute_error(x,y)
+#            else:
+#                mse = 0
+#                rmse = 0
+#                me = 0
+#                mae = 0
+            
             #simulated values
             y2 = df_simul.loc[: , pd.IndexSlice[station , j , 'simul' ]].values
             #measured values for specific depth
@@ -916,6 +1348,7 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  , requiredStation
 #                                                  figsize = (15 , 10))
                 
                 ax2.plot(date_plots , y3)
+                #if (np.isnan(plot_dict_min_diff[j])==False) and (np.isnan(plot_dict_max_diff[j])==False):
                 ax2.set_ylim(plot_dict_max_diff[j]-1 ,plot_dict_min_diff[j]+1)
                 ax2.legend(['Difference'])
                 ax2.set_title(plot_dict[j] + ' difference,station: ' + station + ', depth= ' + i)
@@ -929,22 +1362,31 @@ def e_velocitycomp( commonfol , basefol , period_s , period_e  , requiredStation
                 fig.savefig(savingname )
                 plt.close()  
                 
+        print(station+' ...velocity components comparison extracted ...')
+        print('-------------------------------------')
+        
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
 
 def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFile ):
 
     station_names_req = np.loadtxt(requiredStationsFile , delimiter='\t', dtype = str).tolist()
 
+#    dateparse = lambda x: pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
     df_simul = pd.read_csv(path.join(basefol, 'telemac_variables','variables_all_stations' ,'wave_all_stations.dat' ) ,index_col =0 )
     df_simul.index = pd.to_datetime(df_simul.index)
+#                           header =0 , parse_dates = ['Unnamed: 0'],date_parser = dateparse, index_col =0 , squeeze=True)
+#    df_simul.set_index('Unnamed: 0', inplace = True)
     
     dateparse2 = lambda x: pd.datetime.strptime(x, '%d-%b-%Y %H:%M:%S')
     path2 = path.join(commonfol, 'measurements')
     for file in os.listdir(path2):
         if file.endswith('.wv.dat'):
-            df_meas = pd.read_csv( path.join(path2 , file) , 
-                           header =0 , parse_dates = ['Time'],date_parser = dateparse2, index_col =0 , squeeze=True)
+#            df_meas = pd.read_csv( path.join(path2 , file) , 
+#                           header =0 , parse_dates = ['Time'],date_parser = dateparse2, index_col =0 , squeeze=True)
             ####for testing fake data
-            #df_meas = pd.read_csv( path.join(path2 , file) , index_col = 0)
+            df_meas = pd.read_csv( path.join(path2 , file) , index_col = 0)
 
     #expanding wave components
     idx = df_meas.columns.str.split('_', expand=True)
@@ -952,7 +1394,7 @@ def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFi
     idx = df_simul.columns.str.split('_', expand=True)
     df_simul.columns = idx
     
-    #stations for comparison
+    
     station_names_for_comp=[]
     for station in station_names_req:
         if (station in df_meas.columns.levels[0]) and (station in df_simul.columns.levels[0]):
@@ -1033,8 +1475,19 @@ def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFi
     #sort columns multiindices to avoid 'PerformanceWarning: indexing past lexsort depth may impact performance.'
     dfmeassimulforcomp = dfmeassimulforcomp.sort_index( axis = 1)
     
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')
+    
+    print('Extracting wave components comparison plots ...')
+    
+    n=0
     #comparison plots
     for station in station_names_for_comp:
+        
+        n+=1
+        print('station {} of {} ...'.format( n, len(station_names_for_comp)) )
+        
         for i in ['swh' , 'mwd' , 'mwp' , 'pwp']:
             
             try:
@@ -1046,7 +1499,7 @@ def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFi
             
             if dfmeassimulforcomp.loc[: , pd.IndexSlice[station , i , 'meas']].isnull().all() == False:
 
-                #subplot1 meas vs simul, subplot2 diff; for each station (excluding nan)
+                #subplot1 meas vs simul, subplot2 diff; for each station (including nan)
                 fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=False , figsize=(30,20))
                     
 #                dfmeassimulforcomp.loc[: , pd.IndexSlice[station , i]].plot( y = ['meas' , 'simul'] , ax=ax1 , legend=True  , 
@@ -1073,7 +1526,13 @@ def f_wavecomp( commonfol , basefol , period_s , period_e  ,  requiredStationsFi
                 savingname = path.join(path_1 , plot_dict[i] + '_comp_diffr_station_'+station + '.png')
                 fig.savefig(savingname )
                 plt.close()
-                            
+                
+        print(station+' ...wave components comparison extracted ...')
+        print('-------------------------------------')
+                        
+    print('-------------------------------------')
+    print('-------------------------------------')
+    print('-------------------------------------')                            
 
 def j_all(lib_func_fol , commonfol , basefol , stationsDB , requiredStationsFile , slffile , reqvar , telmod ,  period_s , period_e , k , *args ):
     '''
